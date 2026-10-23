@@ -1,12 +1,12 @@
-# tellstick-znet-live-v2-nocloud
-This is a new connection method specifically developed for the Tellstick Znet Live v2, since the lack of current updates makes it nearly impossible to use the device in an air-gapped network. Additionally, the web UI has stopped working in modern browsers and Tellus have ceased support for the device on that front (that annoying /tellduslive/authorize error that has you downloading browsers from 10 years ago to try and bypass).
+# tellstick-znet-lite-v2-nocloud
+This is a new connection method specifically developed for the Tellstick Znet Lite v2, since the lack of current updates makes it nearly impossible to use the device in an air-gapped network. Additionally, the web UI has stopped working in modern browsers and Tellus have ceased support for the device on that front (that annoying /tellduslive/authorize error that has you downloading browsers from 10 years ago to try and bypass).
 
 ## TL;DR
 Need machine secret, locally generated key to create access token to the device. Tellus helpfully provides a mechanism to obtain this data.
 
 
 ## Background
-The API for the Znet Live v2 is only accessible with a token, that is normally created by Tellus for 30 days at a time. This means there is (was) no way at all to connect to your local device on your local, air-gapped network. Even on a network that has access to the internet, maintaining access is not possible for more than 30 days at a time.
+The API for the Znet Lite v2 is only accessible with a token, that is normally created by Tellus for 30 days at a time. This means there is (was) no way at all to connect to your local device on your local, air-gapped network. Even on a network that has access to the internet, maintaining access is not possible for more than 30 days at a time.
 
 
 ### Inspection
@@ -30,12 +30,12 @@ Our first instinct was to target the SSH server to sign in to the device to be a
 After taking a look at the firmware, we realized we had missed a very helpful undocumented (and completely unauthenticated) UDP API endpoint at port 30303:
 
 
-```
+```python
 import socket, sys
 
 attrs = ['product', 'mac', 'secret', 'firmware', 'uuid']
 
-# Connect to your Znet Live v2 device via the helpful UDP API at port 30303
+# Connect to your Znet Lite v2 device via the helpful UDP API at port 30303
 address = socket.gethostbyname("10.0.0.33")
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sck:
     sck.settimeout(3.0)
@@ -57,7 +57,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sck:
 
 This provides us with the very helpful response of:
 
-```
+```yaml
 product: TellstickZnetLiteV2
 mac: ACACACACACACAC
 secret: ABCDEFGHIJK
@@ -72,7 +72,7 @@ This one is a bit trickier, since they didn't provide a helpful API for it. Howe
 
 This is where the part about the helpful configuration backup comes in. If we go ahead and start a packet capture on outbound traffic from the device IP with destination port 80, and then go into the app to change the device name from anything to anything else, we get this very helpful nugget of information among the captured packets (some information obfuscated):
 
-```
+```bash
 ethertype IPv4 (0x0800), length 1234: (tos 0x0, ttl 64, id 24112, offset 0, flags [DF], proto TCP (6), length 1234)
     10.0.0.33.56789 > 15.16.17.18.80: Flags [.], cksum 0xf09b (correct), seq 1:1449, ack 1, win 3650, options [nop,nop,TS val 1234567890 ecr 1234567890], length 1024: HTTP, length: 1024
 	POST /upload/config HTTP/1.1
@@ -99,7 +99,7 @@ Huzzah! That looks like a configuration file to me.
 
 We now get a binary blob (which is helpfully encrypted by the device secret that we were provided earlier) with the decrypt_pcap.py script. This will get us a file called Tellus.conf:
 
-```
+```ini
 ......
 [telldus.api]
 salt = AbCdeF+GhijkL9mnOpQrast==
@@ -129,8 +129,8 @@ Now, we just need to generate our own access token for the Tellus API using the 
 
 Using all of the information combined, we can now mint our very own access token for the Tellus API:
 
-```
-python3 create-jwt.py Decrypted-Telldus.conf --ttl-seconds 99999999 --app local-audit
+```bash
+$ python3 create-jwt.py Decrypted-Telldus.conf --ttl-seconds 99999999 --app local-audit
 Device secret:
 
 eyJ0eXAi.........................................................................eyJ9.

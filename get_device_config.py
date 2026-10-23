@@ -2,7 +2,7 @@ import socket
 
 attrs = ['product', 'mac', 'secret', 'firmware', 'uuid']
 
-# Connect to your Znet Live v2 device via the helpfully unauthenticated UDP API at port 30303
+# Connect to your Znet Lite v2 device via the helpfully unauthenticated UDP API at port 30303
 address = socket.gethostbyname("10.10.10.8")
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sck:
     sck.settimeout(3.0)
