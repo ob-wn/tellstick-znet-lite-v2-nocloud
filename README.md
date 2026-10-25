@@ -1,21 +1,21 @@
 # tellstick-znet-lite-v2-nocloud
-This is a new connection method specifically developed for the Tellstick Znet Lite v2, since the lack of current updates makes it nearly impossible to use the device in an air-gapped network. Additionally, the web UI has stopped working in modern browsers and Tellus have ceased support for the device on that front (that annoying /tellduslive/authorize error that has you downloading browsers from 10 years ago to try and bypass).
+This is a new connection method specifically developed for the Tellstick Znet Lite v2, since the lack of current updates makes it nearly impossible to use the device in an air-gapped network. Additionally, the web UI has stopped working in modern browsers and Telldus have ceased support for the device on that front (that annoying /tellduslive/authorize error that has you downloading browsers from 10 years ago to try and bypass).
 
 ## TL;DR
-Need machine secret, locally generated key to create access token to the device. Tellus helpfully provides a mechanism to obtain this data.
+Need machine secret, locally generated key to create access token to the device. Telldus helpfully provides a mechanism to obtain this data.
 
 
 ## Background
-The API for the Znet Lite v2 is only accessible with a token, that is normally created by Tellus for 30 days at a time. This means there is (was) no way at all to connect to your local device on your local, air-gapped network. Even on a network that has access to the internet, maintaining access is not possible for more than 30 days at a time.
+The API for the Znet Lite v2 is only accessible with a token, that is normally created by Telldus for 30 days at a time. This means there is (was) no way at all to connect to your local device on your local, air-gapped network. Even on a network that has access to the internet, maintaining access is not possible for more than 30 days at a time.
 
 
 ### Inspection
 After taking a look at the firmware, device and communication of the Znet v2, we found the following:
 
-- API tokens are JWTs, normally created and signed by Tellus and validated on the local device.
+- API tokens are JWTs, normally created and signed by Telldus and validated on the local device.
 - The secret for this JWT is derived from the machine secret stored on the device along with a salt and device token that is generated locally
-- The device token, salt and other configuration is packaged and uploaded to Tellus whenever the configuration changes (e.g. changing the name of the device).
-- The /upload/config call towards Tellus is made via HTTP, so it's unencrypted inspectable traffic.
+- The device token, salt and other configuration is packaged and uploaded to Tellds whenever the configuration changes (e.g. changing the name of the device).
+- The /upload/config call towards Telldus is made via HTTP, so it's unencrypted inspectable traffic.
 - The uploaded config archive is encrypted by the same machine secret stored on the device above.
 - The device is running Dropbear SSH for remote connectivity
 
@@ -65,7 +65,7 @@ firmware: 1.3.2
 uuid: 12345678-1234-1234-1234-123456789abc
 ```
 
-There we go, that's 1/2 road blocks successfully pushed out of the way with the help of some friendly engineer at Tellus.
+There we go, that's 1/2 road blocks successfully pushed out of the way with the help of some friendly engineer at Telldus.
 
 ### 2. The local device token
 This one is a bit trickier, since they didn't provide a helpful API for it. However, as it turns out, they helped us a bit along the way.
@@ -97,7 +97,7 @@ ethertype IPv4 (0x0800), length 1234: (tos 0x0, ttl 64, id 24112, offset 0, flag
 
 Huzzah! That looks like a configuration file to me. 
 
-We now get a binary blob (which is helpfully encrypted by the device secret that we were provided earlier) with the decrypt_pcap.py script. This will get us a file called Tellus.conf:
+We now get a binary blob (which is helpfully encrypted by the device secret that we were provided earlier) with the decrypt_pcap.py script. This will get us a file called Telldus.conf:
 
 ```ini
 ......
@@ -110,7 +110,7 @@ tokenKey = AbcdefGhijklmnOpQrStUvw=
 That gets us the rest of the way there!
 
 ### 3. The access token
-Now, we just need to generate our own access token for the Tellus API using the information we found. The JWT has the following format:
+Now, we just need to generate our own access token for the Telldus API using the information we found. The JWT has the following format:
 
 ```json
 {
@@ -127,7 +127,7 @@ Now, we just need to generate our own access token for the Tellus API using the 
 }
 ```
 
-Using all of the information combined, we can now mint our very own access token for the Tellus API:
+Using all of the information combined, we can now mint our very own access token for the Telldus API:
 
 ```bash
 $ python3 create-jwt.py Decrypted-Telldus.conf --ttl-seconds 99999999 --app local-audit
@@ -163,7 +163,7 @@ And bob's your uncle!
 
 
 ## Disclaimer
-This authentication method only targets the purchased hardware that is in your home, and does not in any way, shape or form target the servers or infrastructure of Tellus. This means that under the various right-to-repair laws and interoperability exemptions from DMCA laws, analyzing the software included in a device you purchase/own is not illegal. This method does not read, modify, copy, distribute or alter source or binary code that Tellus holds the intellectual property rights for.
+This authentication method only targets the purchased hardware that is in your home, and does not in any way, shape or form target the servers or infrastructure of Telldus. This means that under the various right-to-repair laws and interoperability exemptions from DMCA laws, analyzing the software included in a device you purchase/own is not illegal. This method does not read, modify, copy, distribute or alter source or binary code that Telldus holds the intellectual property rights for.
 The interoperability exemptions allow for reverse engineering and analysis of software to ensure compatibility with other systems, provided that the analysis is limited to what is necessary for achieving interoperability.
 
 ### Section 69e UrhG: decompilation for interoperability
